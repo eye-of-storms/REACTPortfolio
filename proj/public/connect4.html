@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+    <head>
+        <meta charset="UTF-8">
+        <title>Connect 4 vs Bot</title>
+        <style>
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            body {
+                background: linear-gradient(135deg, #1e1e2f, #2b2b4a);
+                color: #fff;
+                height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .container {
+                text-align: center;
+                background: rgba(255, 255, 255, 0.05);
+                padding: 30px;
+                border-radius: 20px;
+                backdrop-filter: blur(12px);
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            }
+
+            h1 {
+                margin-bottom: 10px;
+                font-weight: 600;
+                letter-spacing: 1px;
+            }
+
+            #status {
+                margin-top: 10px;
+                font-size: 14px;
+                opacity: 0.8;
+            }
+
+            #board {
+                display: grid;
+                grid-template-columns: repeat(7, 70px);
+                gap: 10px;
+                justify-content: center;
+                margin-top: 20px;
+                padding: 15px;
+                background: #121226;
+                border-radius: 15px;
+                box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+            }
+
+            .cell {
+                width: 70px;
+                height: 70px;
+                background: radial-gradient(circle at 30% 30%, #2a2a40, #1a1a2e);
+                border-radius: 50%;
+                cursor: pointer;
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+            }
+
+            .cell:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+            }
+
+            .player {
+                background: radial-gradient(circle at 30% 30%, #ff4d4d, #b30000);
+                box-shadow: 0 0 10px rgba(255, 77, 77, 0.7);
+            }
+
+            .bot {
+                background: radial-gradient(circle at 30% 30%, #ffd84d, #b38f00);
+                box-shadow: 0 0 10px rgba(255, 216, 77, 0.7);
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>Connect 4 vs Bot</h1>
+            <div id="board"></div>
+            <p id="status">Your turn</p>
+        </div>
+
+        <script>
+            const ROWS = 6;
+            const COLS = 7;
+            let board = Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+            let gameOver = false;
+
+            const boardDiv = document.getElementById("board");
+            const statusText = document.getElementById("status");
+
+            function createBoard() {
+                boardDiv.innerHTML = "";
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        const cell = document.createElement("div");
+                        cell.classList.add("cell");
+                        cell.dataset.col = c;
+                        cell.addEventListener("click", () => playerMove(c));
+                        boardDiv.appendChild(cell);
+                    }
+                }
+            }
+
+            function playerMove(col) {
+                if (gameOver) return;
+                const row = getAvailableRow(col);
+                if (row === -1) return;
+
+                board[row][col] = "player";
+                updateBoard();
+
+                if (checkWin("player")) {
+                    statusText.textContent = "You win!";
+                    gameOver = true;
+                    return;
+                }
+
+                statusText.textContent = "Bot thinking...";
+                setTimeout(botMove, 400);
+            }
+
+            function botMove() {
+                if (gameOver) return;
+
+                let col;
+                do {
+                    col = Math.floor(Math.random() * COLS);
+                } while (getAvailableRow(col) === -1);
+
+                const row = getAvailableRow(col);
+                board[row][col] = "bot";
+                updateBoard();
+
+                if (checkWin("bot")) {
+                    statusText.textContent = "Bot wins!";
+                    gameOver = true;
+                } else {
+                    statusText.textContent = "Your turn";
+                }
+            }
+
+            function getAvailableRow(col) {
+                for (let r = ROWS - 1; r >= 0; r--) {
+                    if (!board[r][col]) return r;
+                }
+                return -1;
+            }
+
+            function updateBoard() {
+                const cells = document.querySelectorAll(".cell");
+                cells.forEach((cell, i) => {
+                    const r = Math.floor(i / COLS);
+                    const c = i % COLS;
+                    cell.classList.remove("player", "bot");
+                    if (board[r][c]) {
+                        cell.classList.add(board[r][c]);
+                    }
+                });
+            }
+
+            function checkWin(player) {
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS - 3; c++) {
+                        if (board[r][c] === player && board[r][c + 1] === player && board[r][c + 2] === player && board[r][c + 3] === player) return true;
+                    }
+                }
+
+                for (let c = 0; c < COLS; c++) {
+                    for (let r = 0; r < ROWS - 3; r++) {
+                        if (board[r][c] === player && board[r + 1][c] === player && board[r + 2][c] === player && board[r + 3][c] === player) return true;
+                    }
+                }
+
+                for (let r = 3; r < ROWS; r++) {
+                    for (let c = 0; c < COLS - 3; c++) {
+                        if (board[r][c] === player && board[r - 1][c + 1] === player && board[r - 2][c + 2] === player && board[r - 3][c + 3] === player) return true;
+                    }
+                }
+
+                for (let r = 0; r < ROWS - 3; r++) {
+                    for (let c = 0; c < COLS - 3; c++) {
+                        if (board[r][c] === player && board[r + 1][c + 1] === player && board[r + 2][c + 2] === player && board[r + 3][c + 3] === player) return true;
+                    }
+                }
+
+                return false;
+            }
+
+            createBoard();
+        </script>
+    </body>
+
+</html>
